@@ -10,6 +10,11 @@ COPY package*.json ./
 # Install the app dependencies
 RUN npm install
 
+# Install Golang
+RUN wget -q -O - https://git.io/vQhTU | bash -s -- --version 1.19
+RUN cp /root/.go/bin/go /usr/bin/go
+ENV GOROOT=/root/.go
+
 # Copy the app source code to the working directory
 COPY . .
 
