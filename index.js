@@ -14,19 +14,26 @@ const { createAppAuth } = require('@octokit/auth-app')
 const execAsync = util.promisify(exec)
 
 const velaRepo = 'kubevela/kubevela'
-const testRepo = 'chivalryq/test-matrix-on-tags'
-const testRepoOnwer = testRepo.split('/')[0]
-const testRepoBranch = 'main'
-const testRepoName = testRepo.split('/')[1]
+const testRepo = process.env.TEST_REPO
+const testRepoBranch = process.env.TEST_REPO_BRANCH
 const veladURL = 'https://github.com/kubevela/velad'
 const catalogRepo = 'kubevela/catalog'
-const catalogRepoOwner = catalogRepo.split('/')[0]
-const catalogRepoName = catalogRepo.split('/')[1]
 const catalogRepoMainBranch = 'master'
-const watchRepo = testRepo
+
+let VelaRepo = velaRepo
+let CatalogRepo = catalogRepo
+let CatalogRepoMainBranch = catalogRepoMainBranch
+if (process.env.TEST_REPO !== '') {
+  VelaRepo = testRepo
+  CatalogRepo = testRepo
+}
+if (process.env.TEST_REPO_BRANCH !== '') {
+  CatalogRepoMainBranch = testRepoBranch
+}
+
+let [catalogRepoOwner, catalogRepoName] = CatalogRepo.split('/')
 
 const privateKey = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
-console.log(privateKey);
 const appId = process.env.APP_ID
 const installationId = process.env.INSTALLATION_ID
 
@@ -94,7 +101,7 @@ module.exports = (app) => {
   })
 
   app.on(['release.published'], async (context) => {
-    if (context.payload.repository.full_name === watchRepo) {
+    if (context.payload.repository.full_name === VelaRepo) {
       const tagName = context.payload.release.tag_name
       const prTitle = VeladPRTitlePrefix + tagName
       const prBody = 'Update kubevela/velad'
@@ -143,8 +150,7 @@ module.exports = (app) => {
       app.log.info('PR was closed without merging')
       return
     }
-    // todo: change to catalogRepo before release
-    if (repository.full_name !== testRepo) {
+    if (repository.full_name !== catalogRepo) {
       app.log.info('Not in the watch repo', repository.full_name)
       return
     }
@@ -169,11 +175,10 @@ module.exports = (app) => {
     // Get the metadata.yaml file from the catalog repo
     // This indicates that PR is merged to master branch
     const { data: metadata } = await octokit.repos.getContent({
-      // todo: change to catalogRepo before release
-      owner: testRepoOnwer,
-      repo: testRepoName,
+      owner: catalogRepoOwner,
+      repo: catalogRepoName,
       path: 'addons/velaux/metadata.yaml',
-      ref: testRepoBranch,
+      ref: catalogRepoMainBranch,
       mediaType: {
         format: 'raw',
       }
