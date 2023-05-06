@@ -25,7 +25,8 @@ const catalogRepoName = catalogRepo.split('/')[1]
 const catalogRepoMainBranch = 'master'
 const watchRepo = testRepo
 
-const privateKey = process.env.PRIVATE_KEY
+const privateKey = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
+console.log(privateKey);
 const appId = process.env.APP_ID
 const installationId = process.env.INSTALLATION_ID
 
@@ -106,7 +107,7 @@ module.exports = (app) => {
         }
 
         await cloneRepository(veladURL, repoPath)
-        app.log.info('Cloning ' + veladURL + ' to ' + repoPath)
+        app.log.info('Cloned ' + veladURL + ' to ' + repoPath)
 
         const branchName = 'velad-bot/bump-kubevela-version-' + tagName
         const gitRepo = simpleGit(repoPath)
@@ -158,7 +159,7 @@ module.exports = (app) => {
     filenames = files.map((file) => file.filename)
 
     // Check if the PR contains a file named 'metadata.yaml'
-    app.log.info('PR merged:', pull_request.id)
+    app.log.info('PR merged:', pull_request.number)
     app.log.info('Changed files:', filenames)
 
     if (!filenames.includes('addons/velaux/metadata.yaml')) {
@@ -212,6 +213,7 @@ module.exports = (app) => {
 
     // Clone the repository and set up the local repo
     await cloneRepository(veladURL, repoPath)
+    app.log.info('Cloned ' + veladURL + ' to ' + repoPath)
     const gitRepo = simpleGit(repoPath)
 
     // Fetch the PR's branch and check it out
